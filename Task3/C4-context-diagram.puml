@@ -1,0 +1,23 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Context Diagram for MVP Deposit Opening
+
+Person(Client, "Клиент", "Новый или существующий клиент банка")
+Person(FrontOffice, "Фронт-офис", "Менеджеры в отделениях")
+Person(CallCenter, "Кол-центр", "Операторы кол-центра")
+Person(BackOffice, "Бэк-офис", "Специалисты по депозитам и кредитам")
+
+System(BankSystem, "Банк Стандарт", "Система для открытия депозитов")
+
+System_Ext(Telecom, "Телеком-оператор", "Отправка SMS")
+
+Rel(Client, BankSystem, "Просмотр ставок, подача заявки")
+Rel(CallCenter, BankSystem, "Обработка заявок с сайта")
+Rel(FrontOffice, BankSystem, "Идентификация, открытие депозита")
+Rel(BackOffice, BankSystem, "Подтверждение ставок и заявок")
+Rel(BankSystem, Telecom, "Отправка SMS-уведомлений")
+
+@enduml

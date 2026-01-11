@@ -1,0 +1,58 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Диаграмма контейнеров для процесса открытия депозитов онлайн
+
+LAYOUT_WITH_LEGEND()
+
+Person(client, "Клиент", "Заходит на сайт, видит ставки, подаёт заявку")
+Person(backOffice, "Бэк-офис", "Согласовывает заявку в АБС")
+Person(callCenter, "Кол-центр", "Получает уведомления для новых клиентов")
+
+System_Boundary(bankSystem, "IT-система банка Стандарт") {
+    Container(site, "Сайт", "PHP + React.js", "Отображение ставок, подача заявок")
+    Container(internetBank, "Интернет-банк", "ASP.NET MVC, MS SQL", "Отображение ставок, подача заявок")
+    Container(apiGateway, "API Gateway", "Spring Cloud Gateway", "Маршрутизация запросов")
+    Container(rateService, "Сервис хранения справочных данных", "Java Spring", "Хранит актуальные справочные данные")
+    ContainerDb(rateDB, "База ставок", "Redis", "Хранение справочных данных")
+    Container(depositService, "Сервис управления депозитами", "Java Spring Boot, PostgreSQL", "Обработка и хранение заявок по депозитам, расчет персонализированных ставок")
+    ContainerDb(depositDB, "База депозитов", "PostgreSQL", "Хранение заявок и статусов")
+    Container(abs, "АБС", "Delphi, Oracle", "Согласование заявок")
+    ContainerDb(absDB, "База АБС", "Oracle", "Хранение данных АБС")
+    Container(controlProcedureService, "Сервис контрольных процедур", "Spring Scheduler / Cron", "Содержит задачи по расписанию для синхронизации АБС и депозитов")
+    Container(callCenterSystem, "Система кол-центра", "React.js, Java", "Управление пользовательскими заявками")
+    Container(smsService, "Сервис нотификаций", "Java Spring Boot", "Формирование и отправка событий в шлюзы")
+    Container(smsGateway, "СМС-шлюз", "Интерфейс к телеком", "Отправка SMS")
+    Container(messageBroker, "Message Broker", "Асинхронное взаимодействие компонентов", "Отправка SMS")
+
+    Rel(client, site, "Заходит, видит ставки, подаёт заявку", "HTTP")
+    Rel(client, internetBank, "Заходит, видит ставки, подаёт заявку", "HTTP")
+    Rel(site, apiGateway, "Запрос актуальных ставок и подача заявки", "HTTP")
+    Rel(internetBank, apiGateway, "Запрос актуальных ставок и подача заявки", "HTTP")
+    Rel(apiGateway, depositService, "Маршрутизация к сервису депозитов", "REST")
+    Rel(depositService, depositDB, "Сохранение в черновик/активный статус")
+    Rel(controlProcedureService, depositDB, "Чтение активных заявок")
+    Rel(controlProcedureService, absDB, "Синхронизация статуса заявок", "JDBC/PL-SQL")
+    Rel(backOffice, abs, "Согласование заявки", "Десктопный клиент")
+    Rel(depositService, "abs", "Перенос заявок в АБС")
+    Rel(smsService, smsGateway, "отправка смс")
+    Rel(rateService, rateDB, "Кэширование данных")
+    Rel(depositService, rateService, "Получение актуальных ставок банка")
+    Rel(abs, absDB, "Хранение")
+    Rel(callCenter, callCenterSystem, "Оформление и обработка заявок")
+    Rel(depositService, messageBroker, "Отправка заявок новых пользователей", "kafka")
+    Rel(messageBroker, callCenterSystem, "Отправка заявок новых пользователей", "kafka")
+    Rel(messageBroker, smsService, "Отправка события при подтверждении условий", "kafka")
+    Rel(controlProcedureService, messageBroker, "Отправляет события о утверждении заявок", "kafka")
+    Rel(messageBroker, depositService, "Отправляет события о утверждении заявок", "kafka")
+
+}
+
+' Внешние
+System_Ext(telecom, "Телеком-оператор", "SMS")
+System_Ext(cbr, "API ЦБ РФ", "Ключевая ставка")
+
+Rel(smsGateway, telecom, "Отправка SMS")
+Rel(rateService, cbr, "Получение ключевой ставки", "HTTP (ежедневно)")
+
+@enduml

@@ -1,0 +1,62 @@
+@startuml
+!define C4_INCLUDE https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include C4_INCLUDE
+
+title Диаграмма контейнеров для банка «Стандарт» (Уровень 2 C4)
+
+Person(client, "Клиент", "Клиенты банка, взаимодействующие через онлайн-каналы или отделения.")
+Person(employee_front, "Сотрудник фронт-офиса", "Персонал отделений")
+Person(employee_back, "Сотрудник бэк-офиса", "Персонал бэк офиса")
+Person(partner_call_op, "Оператор партнерского кол-центра", "Операторы внешнего партнерского кол-центра.")
+Person(callCenter, "Call-center", "Операторы кол-центра.")
+Person(creditManager, "Сотрудник кредитного отдела", "Персонал бэк офиса")
+
+
+System_Boundary(bank_system, "Система банка «Стандарт»") {
+Container(website, "Сайт", "PHP, React.js", "Публичный сайт для маркетинга и заявок.")
+Container(internet_bank, "Интернет-банк", "ASP.NET MVC 4.5, .NET 4.5, MS SQL", "Онлайн-банкинг для платежей и счетов.")
+Container(apiGateway, "API Gateway", "Spring Cloud Gateway", "Маршрутизация запросов")
+Container(appProcessingSystem, "Сервис обработки заявок на кредит", "Spring", "Логика обработки заявок клиентов")
+ContainerDb(absDb, "База данных АБС", "Oracle", "Основные банковские данные и логика PL/SQL.")
+Container(abs, "Система АБС", "Delphi Desktop", "Основная система банка")
+Container(callCenterSystem, "Система кол-центра", "React.js, Java Spring Boot, PostgreSQL", "Для ведения заявок клиентов")
+Container(credit_conveyor, "Кредитный конвейер", "Camunda BPM, Java, Oracle", "Обрабатывает заявки на кредиты.")
+Container(credit_scoring, "Система кредитного скоринга", "Python Flask, PostgreSQL", "Система оценки кредитного рейтинга на основе ML.")
+Container(sms_gateway, "SMS-шлюз", "Внутренний", "Интерфейс с телеком-оператором для SMS.")
+Container(pre_approved_service, "Сервис предодобренных предложений", "Java/Spring/PostgreSQL", "В нерабочее время проводит скоринг клиентов и хранит предодобренные предложения.")
+ContainerDb(pre_approved_service_db, "База предодобренных предложений", "PostgeSql")
+
+}
+
+System_Ext(credit_bureau, "Бюро кредитных историй", "Внешний REST API для кредитных историй.")
+System_Ext(telecom, "Телеком-оператор", "Внешняя служба SMS.")
+System_Ext(partner_cc_system, "Система партнерского кол-центра", "Внешняя система для операций партнера.")
+
+Rel(client, website, "Просматривает информацию, отправляет заявки", "HTTPS")
+Rel(client, internet_bank, "Просматривает информацию, отправляет заявки", "HTTPS")
+Rel(abs, absDb, " ")
+Rel(employee_back, credit_conveyor, "Обрабатывает заявки на кредиты/депозиты (предодобренные - в тот же рабочий день)")
+Rel(callCenter, callCenterSystem, "Обрабатывает звонки")
+Rel(partner_call_op, partner_cc_system, "Обрабатывает звонки по скриптам")
+Rel(website, apiGateway, "Отправляет уведомления", "Внутренний")
+Rel(internet_bank, apiGateway, "Отправляет подтверждения и заявки на кредит", "Внутренний")
+Rel(apiGateway, appProcessingSystem, "Маршрутизация запросов")
+Rel(appProcessingSystem, callCenterSystem, "Оправляет заявки новых клиентов")
+Rel(appProcessingSystem, sms_gateway, "Отправка уведомления клиенту и SMS-кода подтверждения")
+Rel(appProcessingSystem, absDb, "Отправляет предодобренную заявку")
+Rel(employee_front, abs, "Создание заявок через отделение")
+Rel(appProcessingSystem, credit_conveyor, "Передача заявки на обработку")
+Rel(credit_conveyor, credit_scoring, "Повторный скоринг при необходимости")
+Rel(credit_scoring, credit_bureau, "Получение кредитной истории для скоринга")
+Rel(credit_conveyor, sms_gateway, "Информирование о изменении статуса заявки", "SMS")
+Rel(appProcessingSystem, pre_approved_service, "Поиск предобренных предложений для клиента", "HTTPS")
+Rel(creditManager, pre_approved_service, "Загружает файл с клиентами для предварительного скоринга", "HTTPS")
+Rel(pre_approved_service, credit_scoring, "Запрашивает скорринг клиентов", "HTTPS")
+Rel(pre_approved_service, pre_approved_service_db, " ", "sql")
+
+
+
+
+Rel(sms_gateway, telecom, "Отправка SMS")
+
+@enduml

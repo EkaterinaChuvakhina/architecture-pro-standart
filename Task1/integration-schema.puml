@@ -1,0 +1,81 @@
+@startuml
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam roundCorner 20
+skinparam rectangle {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+  BorderThickness 2
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #BBDEFB
+  BorderColor #1976D2
+  FontSize 12
+}
+skinparam arrow {
+  Color #1565C0
+  Thickness 2.5
+}
+skinparam nodesep 80
+skinparam ranksep 90
+hide stereotype
+
+title Текущая схема интеграций банка "Стандарт"
+
+left to right direction
+
+actor Client              as "<b>Клиент</b>"
+actor FrontOffice         as "<b>Фронт-офис</b>"
+actor CallCenter          as "<b>Кол-центр банка</b>"
+actor PartnerCallCenter   as "<b>Партнёрский\nкол-центр</b>"
+actor BackDeposits        as "<b>Бэк-офис депозиты</b>"
+actor BackCredits         as "<b>Бэк-офис кредиты</b>"
+actor IT                  as "<b>Управление IT</b>"
+
+rectangle "<b>Банк Стандарт</b>" as Bank #E3F2FD {
+  rectangle "<b>Сачйт</b>\nPHP, React.js"                                 as Site
+  rectangle "<b>Интернет-банк</b>\nASP.NET MVC, MS SQL"                  as InternetBank
+  rectangle "<b>АБС</b>\nDelphi, Oracle PL/SQL"                          as ABS
+  rectangle "<b>Система кол-центра</b>\nReact.js, Java Spring Boot, PostgreSQL" as CallCenterSystem
+  rectangle "<b>СМС-шлюз</b>\nИнтеграция с телеком"                      as SMSGateway
+  rectangle "<b>Кредитный конвейер</b>\nCamunda, Oracle"                 as CreditConveyor
+  rectangle "<b>Система кредитного скоринга</b>\nPython, Flask, PostgreSQL" as Scoring
+}
+
+rectangle "<b>Телеком-оператор</b>"              as Telecom        #FFF3E0
+rectangle "<b>Бюро кредитных историй</b>"        as CreditBureau   #FFF3E0
+rectangle "<b>Система партнёрского кол-центра</b>" as PartnerCallSys #FFF3E0
+
+Client              --> Site               : Просмотр информации
+Client              --> InternetBank       : Проведение платежей, открытие счетов
+Client              --> FrontOffice        : Посещение отделения
+Client              --> CallCenter         : Звонок для консультации
+
+FrontOffice         --> ABS                : Создание депозитов/кредитов
+CallCenter          --> CallCenterSystem   : Регистрация обращений
+PartnerCallCenter   --> PartnerCallSys     : Работа по скриптам
+
+BackDeposits        --> ABS                : Обработка депозитных заявок
+BackDeposits        --> CreditConveyor     : Для специальных ставок
+BackCredits         --> CreditConveyor     : Обработка кредитных заявок
+BackCredits         --> Scoring            : Вызов скоринга
+IT                  --> Bank               : Поддержка и развитие
+
+InternetBank        --> ABS                : Прямой доступ к БД
+CallCenterSystem    --> ABS                : Передача обращений
+ABS                 --> SMSGateway         : Отправка SMS
+SMSGateway          --> Telecom            : Передача сообщений
+
+ABS                 --> CreditConveyor     : Раз в день по БД
+CreditConveyor      --> Scoring            : API вызов
+Scoring             --> CreditBureau       : REST API
+Scoring             --> ABS                : Данные из АБС
+CreditConveyor      --> ABS                : Раз в день
+
+
+legend right
+  |<#FFF3E0> Внешние системы|
+  |<#BBDEFB> Системы банка|
+end legend
+@enduml
